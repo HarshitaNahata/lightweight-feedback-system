@@ -1,9 +1,12 @@
-import { Box, Card, CardContent, Typography, Chip, IconButton, Divider, Tooltip } from '@mui/material';
+import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import { Box, Card, CardContent, Typography, Chip, IconButton, Divider, Tooltip, TextField, Button } from '@mui/material';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import SentimentSatisfiedIcon from '@mui/icons-material/SentimentSatisfied';
 import SentimentNeutralIcon from '@mui/icons-material/SentimentNeutral';
 import SentimentDissatisfiedIcon from '@mui/icons-material/SentimentDissatisfied';
 import PersonIcon from '@mui/icons-material/Person';
+import { useNotification } from '../../context/NotificationContext';
 
 export default function FeedbackList({
     feedbacks,
@@ -11,6 +14,35 @@ export default function FeedbackList({
     showEmployee = false,
     onAcknowledge
 }) {
+    const { addNotification } = useNotification();
+
+    // Map of feedbackId -> array of comments
+    const [commentsMap, setCommentsMap] = useState({});
+    // Map of feedbackId -> current input
+    const [commentInputs, setCommentInputs] = useState({});
+
+    const handleAcknowledge = (id) => {
+        if (onAcknowledge) {
+            onAcknowledge(id);
+            addNotification('Feedback acknowledged!', 'info');
+        }
+    };
+
+    const handleCommentChange = (id, value) => {
+        setCommentInputs(prev => ({ ...prev, [id]: value }));
+    };
+
+    const handleAddComment = (id) => {
+        const comment = commentInputs[id];
+        if (comment && comment.trim()) {
+            setCommentsMap(prev => {
+                const prevComments = prev[id] || [];
+                return { ...prev, [id]: [...prevComments, comment.trim()] };
+            });
+            setCommentInputs(prev => ({ ...prev, [id]: '' }));
+        }
+    };
+
     const getSentimentIcon = (sentiment) => {
         switch (sentiment) {
             case 'positive':
@@ -112,10 +144,20 @@ export default function FeedbackList({
                                 {feedback.areas}
                             </Typography>
 
+                            {/* Tag and anonymous display section */}
+                            <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                {feedback.anonymous && (
+                                    <Chip label="Anonymous" color="default" size="small" sx={{ mr: 1 }} />
+                                )}
+                                {feedback.tags && feedback.tags.map((tag) => (
+                                    <Chip key={tag} label={tag} size="small" color="secondary" />
+                                ))}
+                            </Box>
+
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
                                 {!feedback.acknowledged && onAcknowledge && (
                                     <IconButton
-                                        onClick={() => onAcknowledge(feedback.id)}
+                                        onClick={() => handleAcknowledge(feedback.id)}
                                         color="primary"
                                         sx={{
                                             background: '#e3f2fd',
@@ -145,6 +187,34 @@ export default function FeedbackList({
                                         }}
                                     />
                                 )}
+                            </Box>
+
+                            {/* Comments Section */}
+                            <Box sx={{ mt: 2 }}>
+                                <Typography variant="subtitle1" sx={{ fontWeight: 600, color: '#1976d2' }}>
+                                    Comments
+                                </Typography>
+                                {(commentsMap[feedback.id] || []).map((cmt, idx) => (
+                                    <Box key={idx} sx={{ mb: 1, p: 1, backgroundColor: '#f0f0f0', borderRadius: 1 }}>
+                                        <ReactMarkdown>{cmt}</ReactMarkdown>
+                                    </Box>
+                                ))}
+                                <TextField
+                                    label="Add a comment (Markdown supported)"
+                                    multiline
+                                    rows={3}
+                                    fullWidth
+                                    value={commentInputs[feedback.id] || ''}
+                                    onChange={(e) => handleCommentChange(feedback.id, e.target.value)}
+                                    sx={{ mt: 1 }}
+                                />
+                                <Button
+                                    variant="contained"
+                                    sx={{ mt: 1 }}
+                                    onClick={() => handleAddComment(feedback.id)}
+                                >
+                                    Submit Comment
+                                </Button>
                             </Box>
                         </CardContent>
                     </Card>

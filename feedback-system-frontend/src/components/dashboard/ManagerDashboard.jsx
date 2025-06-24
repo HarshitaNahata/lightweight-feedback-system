@@ -7,6 +7,7 @@ import FeedbackList from '../feedback/FeedbackList';
 import FeedbackChart from '../feedback/FeedbackChart';
 import GroupIcon from '@mui/icons-material/Group';
 import LogoutIcon from '@mui/icons-material/Logout';
+import { generatePDF } from '../../utils/pdfExport';
 
 export default function ManagerDashboard() {
     const { user, logout } = useAuth();
@@ -153,8 +154,21 @@ export default function ManagerDashboard() {
                         )}
                     </Grid>
 
-                    {/* Feedback Chart and List */}
+                    {/* Feedback Chart, Export PDF Button and List */}
                     <Grid item xs={12} md={8}>
+                        <Button
+                            variant="outlined"
+                            onClick={() => generatePDF(feedbacks)}
+                            sx={{
+                                mb: 2,         // existing margin-bottom (theme spacing, e.g. 16px if spacing=8)
+                                float: 'right',
+                                position: 'relative',
+                                top: '5px',
+                                right: '5px'
+                            }}
+                        >
+                            Export as PDF
+                        </Button>
                         <FeedbackChart feedbacks={feedbacks} />
                         <Divider sx={{ my: 2 }} />
                         <FeedbackList

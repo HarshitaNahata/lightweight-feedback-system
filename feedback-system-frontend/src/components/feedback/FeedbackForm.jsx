@@ -9,18 +9,41 @@ import {
     Radio,
     FormLabel,
     Paper,
-    Typography
+    Typography,
+    Chip,
+    Checkbox
 } from '@mui/material';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import MoodIcon from '@mui/icons-material/Mood';
 import SentimentNeutralIcon from '@mui/icons-material/SentimentNeutral';
 import SentimentVeryDissatisfiedIcon from '@mui/icons-material/SentimentVeryDissatisfied';
+import { useNotification } from '../../context/NotificationContext';
+
 
 export default function FeedbackForm({ employee, onSubmit }) {
     const [strengths, setStrengths] = useState('');
     const [areas, setAreas] = useState('');
     const [sentiment, setSentiment] = useState('positive');
+
+    const { addNotification } = useNotification();
+
+
+    // --- Tags state ---
+    const [tags, setTags] = useState([]);
+    const [tagInput, setTagInput] = useState('');
+    // --- Anonymous state ---
+    const [anonymous, setAnonymous] = useState(false);
+
+    // --- Tag handlers ---
+    const handleTagKeyDown = (e) => {
+        if (e.key === 'Enter' && tagInput.trim()) {
+            e.preventDefault();
+            if (!tags.includes(tagInput.trim())) setTags([...tags, tagInput.trim()]);
+            setTagInput('');
+        }
+    };
+    const handleDeleteTag = (tagToDelete) => setTags(tags.filter(tag => tag !== tagToDelete));
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -28,12 +51,18 @@ export default function FeedbackForm({ employee, onSubmit }) {
             employeeId: employee.id,
             strengths,
             areas,
-            sentiment
+            sentiment,
+            tags,
+            anonymous,
         });
+        addNotification('Feedback submitted!', 'success'); // <-- Notification here
         // Reset form
         setStrengths('');
         setAreas('');
         setSentiment('positive');
+        setTags([]);
+        setTagInput('');
+        setAnonymous(false);
     };
 
     return (
@@ -122,6 +151,42 @@ export default function FeedbackForm({ employee, onSubmit }) {
                             />
                         </RadioGroup>
                     </Grid>
+
+                    {/* --- Anonymous checkbox --- */}
+                    <Grid item xs={12}>
+                        <FormControlLabel
+                            control={
+                                <Checkbox
+                                    checked={anonymous}
+                                    onChange={(e) => setAnonymous(e.target.checked)}
+                                    color="primary"
+                                />
+                            }
+                            label={<Typography sx={{ color: '#1976d2', fontWeight: 600 }}>Submit as Anonymous</Typography>}
+                        />
+                    </Grid>
+
+                    {/* --- Tags Entry --- */}
+                    <Grid item xs={12}>
+                        <Box sx={{ mt: 2 }}>
+                            <Typography sx={{ mb: 1, fontWeight: 600, color: '#1976d2' }}>
+                                Tags (press Enter to add)
+                            </Typography>
+                            <TextField
+                                value={tagInput}
+                                onChange={(e) => setTagInput(e.target.value)}
+                                onKeyDown={handleTagKeyDown}
+                                placeholder="Add tags like communication, leadership"
+                                fullWidth
+                            />
+                            <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                                {tags.map((tag) => (
+                                    <Chip key={tag} label={tag} onDelete={() => handleDeleteTag(tag)} color="primary" />
+                                ))}
+                            </Box>
+                        </Box>
+                    </Grid>
+
                     <Grid item xs={12}>
                         <Button
                             type="submit"

@@ -1,13 +1,20 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useFeedback } from '../../context/FeedbackContext';
 import { Box, Typography, Button, Paper } from '@mui/material';
 import FeedbackList from '../feedback/FeedbackList';
 import LogoutIcon from '@mui/icons-material/Logout';
+import { generatePDF } from '../../utils/pdfExport';
+import { useNotification } from '../../context/NotificationContext';
+import FeedbackRequestModal from '../feedback/FeedbackRequestModal';
 
 export default function EmployeeDashboard() {
     const { user, logout } = useAuth();
     const { feedbacks, loadInitialData, updateFeedback } = useFeedback();
+    const { addNotification } = useNotification();
+
+    // State for FeedbackRequestModal
+    const [requestModalOpen, setRequestModalOpen] = useState(false);
 
     useEffect(() => {
         if (user) loadInitialData(user);
@@ -15,6 +22,13 @@ export default function EmployeeDashboard() {
 
     const handleAcknowledge = (id) => {
         updateFeedback(id, { acknowledged: true });
+        addNotification('Feedback acknowledged!', 'info');
+    };
+
+    // Handler for feedback request submission
+    const handleRequestFeedback = (message) => {
+        // Here you could send the request to backend in the future
+        addNotification('Feedback request sent!', 'success');
     };
 
     return (
@@ -92,9 +106,34 @@ export default function EmployeeDashboard() {
                 >
                     Your Feedback
                 </Typography>
+
+                <Button
+                    variant="outlined"
+                    onClick={() => generatePDF(feedbacks)}
+                    sx={{ mb: 2, float: 'right' }}
+                >
+                    Export as PDF
+                </Button>
+
+                {/* Request Feedback Button */}
+                <Button
+                    variant="outlined"
+                    sx={{ mb: 3, mr: 2 }}
+                    onClick={() => setRequestModalOpen(true)}
+                >
+                    Request Feedback
+                </Button>
+
                 <FeedbackList
                     feedbacks={feedbacks}
                     onAcknowledge={handleAcknowledge}
+                />
+
+                {/* Feedback Request Modal */}
+                <FeedbackRequestModal
+                    open={requestModalOpen}
+                    onClose={() => setRequestModalOpen(false)}
+                    onSubmit={handleRequestFeedback}
                 />
             </Paper>
         </Box>
