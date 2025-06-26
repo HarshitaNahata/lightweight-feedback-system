@@ -9,15 +9,28 @@ export default function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const { login } = useAuth();
+    const { login, user } = useAuth(); // <-- get user from context
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        try {
-            await login({ email, password });
-            navigate(email.includes('manager') ? '/manager' : '/employee');
-        } catch (err) {
+        setError('');
+        console.log('Login form submitted');
+        const success = await login({ email, password });
+
+        if (success) {
+            // Wait for user to be set in context, then redirect by role
+            setTimeout(() => {
+                if (user?.role === 'manager') {
+                    navigate('/manager');
+                } else if (user?.role === 'employee') {
+                    navigate('/employee');
+                } else {
+                    setError('Unknown user role');
+                }
+            }, 0); // Slight delay to ensure context updates
+        } else {
+            console.log('Login failed');
             setError('Invalid credentials');
         }
     };

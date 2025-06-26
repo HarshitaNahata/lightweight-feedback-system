@@ -11,14 +11,18 @@ import { generatePDF } from '../../utils/pdfExport';
 
 export default function ManagerDashboard() {
     const { user, logout } = useAuth();
-    const { teamMembers, feedbacks, loadInitialData } = useFeedback();
+    const { teamMembers, feedbacks, loadTeamMembers, loadFeedbacks } = useFeedback();
+
     const [selectedEmployee, setSelectedEmployee] = useState(null);
 
     useEffect(() => {
-        if (user && teamMembers.length === 0) {
-            loadInitialData(user);
+        if (user) {
+            loadTeamMembers();
+            loadFeedbacks();
         }
-    }, [user, loadInitialData, teamMembers.length]);
+    }, [user, loadTeamMembers, loadFeedbacks]);
+
+
 
     return (
         <Box

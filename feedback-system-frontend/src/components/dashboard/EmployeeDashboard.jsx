@@ -10,15 +10,18 @@ import FeedbackRequestModal from '../feedback/FeedbackRequestModal';
 
 export default function EmployeeDashboard() {
     const { user, logout } = useAuth();
-    const { feedbacks, loadInitialData, updateFeedback } = useFeedback();
+    const { feedbacks, loadFeedbacks, updateFeedback } = useFeedback();
     const { addNotification } = useNotification();
 
     // State for FeedbackRequestModal
     const [requestModalOpen, setRequestModalOpen] = useState(false);
 
     useEffect(() => {
-        if (user) loadInitialData(user);
-    }, [user, loadInitialData]);
+        if (user) {
+            loadFeedbacks();
+        }
+    }, [user, loadFeedbacks]);
+
 
     const handleAcknowledge = (id) => {
         updateFeedback(id, { acknowledged: true });

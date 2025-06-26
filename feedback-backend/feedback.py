@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from models import Feedback, Comment, FeedbackRequest, db, User  # Added User import
+from models import Feedback, Comment, FeedbackRequest, db, User
 
 feedback_bp = Blueprint('feedback', __name__)
 
@@ -116,3 +116,17 @@ def create_feedback_request():
         "id": request.id,
         "message": "Feedback request sent"
     }), 201
+
+@feedback_bp.route('/team-members', methods=['GET'])
+@jwt_required()
+def get_team_members():
+    current_user = get_jwt_identity()
+    if current_user['role'] != 'manager':
+        return jsonify({"error": "Unauthorized"}), 403
+    
+    # Fetch manager's team members from database
+    team_members = User.query.filter_by(
+        team_id=current_user['team_id'],
+        role='employee'
+    ).all()
+    return jsonify([m.to_dict() for m in team_members]), 200

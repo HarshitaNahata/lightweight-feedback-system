@@ -7,6 +7,7 @@ import SentimentNeutralIcon from '@mui/icons-material/SentimentNeutral';
 import SentimentDissatisfiedIcon from '@mui/icons-material/SentimentDissatisfied';
 import PersonIcon from '@mui/icons-material/Person';
 import { useNotification } from '../../context/NotificationContext';
+import { useFeedback } from '../../context/FeedbackContext';
 
 export default function FeedbackList({
     feedbacks,
@@ -20,6 +21,7 @@ export default function FeedbackList({
     const [commentsMap, setCommentsMap] = useState({});
     // Map of feedbackId -> current input
     const [commentInputs, setCommentInputs] = useState({});
+    const { acknowledgeFeedback } = useFeedback();
 
     const handleAcknowledge = (id) => {
         if (onAcknowledge) {
@@ -157,7 +159,7 @@ export default function FeedbackList({
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
                                 {!feedback.acknowledged && onAcknowledge && (
                                     <IconButton
-                                        onClick={() => handleAcknowledge(feedback.id)}
+                                        onClick={() => acknowledgeFeedback(feedback.id)}
                                         color="primary"
                                         sx={{
                                             background: '#e3f2fd',

@@ -19,6 +19,7 @@ import MoodIcon from '@mui/icons-material/Mood';
 import SentimentNeutralIcon from '@mui/icons-material/SentimentNeutral';
 import SentimentVeryDissatisfiedIcon from '@mui/icons-material/SentimentVeryDissatisfied';
 import { useNotification } from '../../context/NotificationContext';
+import { useFeedback } from '../../context/FeedbackContext';
 
 
 export default function FeedbackForm({ employee, onSubmit }) {
@@ -28,12 +29,15 @@ export default function FeedbackForm({ employee, onSubmit }) {
 
     const { addNotification } = useNotification();
 
+    const { createFeedback } = useFeedback();
+
 
     // --- Tags state ---
     const [tags, setTags] = useState([]);
     const [tagInput, setTagInput] = useState('');
     // --- Anonymous state ---
     const [anonymous, setAnonymous] = useState(false);
+
 
     // --- Tag handlers ---
     const handleTagKeyDown = (e) => {
@@ -45,9 +49,9 @@ export default function FeedbackForm({ employee, onSubmit }) {
     };
     const handleDeleteTag = (tagToDelete) => setTags(tags.filter(tag => tag !== tagToDelete));
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        onSubmit({
+        const success = await createFeedback({
             employeeId: employee.id,
             strengths,
             areas,
@@ -55,14 +59,18 @@ export default function FeedbackForm({ employee, onSubmit }) {
             tags,
             anonymous,
         });
-        addNotification('Feedback submitted!', 'success'); // <-- Notification here
-        // Reset form
-        setStrengths('');
-        setAreas('');
-        setSentiment('positive');
-        setTags([]);
-        setTagInput('');
-        setAnonymous(false);
+        if (success) {
+            addNotification('Feedback submitted!', 'success');
+            // Reset form
+            setStrengths('');
+            setAreas('');
+            setSentiment('positive');
+            setTags([]);
+            setTagInput('');
+            setAnonymous(false);
+        } else {
+            addNotification('Failed to submit feedback.', 'error');
+        }
     };
 
     return (

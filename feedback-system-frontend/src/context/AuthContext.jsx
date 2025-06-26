@@ -1,4 +1,5 @@
 import { createContext, useState, useContext, useEffect } from 'react';
+import API from '../services/api';
 
 const AuthContext = createContext();
 
@@ -8,21 +9,43 @@ export function AuthProvider({ children }) {
 
     useEffect(() => {
         // Check for existing session
-        const storedUser = JSON.parse(localStorage.getItem('feedbackUser'));
-        if (storedUser) setUser(storedUser);
+        const storedUser = JSON.parse(localStorage.getItem('user'));
+        const token = localStorage.getItem('token');
+
+        if (storedUser && token) {
+            setUser(storedUser);
+        }
         setLoading(false);
     }, []);
 
     const login = async (credentials) => {
-        // API call to authenticate
-        const response = await fakeAuthService(credentials);
-        setUser(response);
-        localStorage.setItem('feedbackUser', JSON.stringify(response));
+        try {
+            console.log('Login attempt with:', credentials);
+            const response = await API.post('/auth/login', {
+                email: credentials.email,
+                password: credentials.password
+            });
+
+            console.log('Login response:', response.data);
+
+            localStorage.setItem('token', response.data.access_token);
+            localStorage.setItem('user', JSON.stringify(response.data.user));
+
+            console.log('Token stored:', localStorage.getItem('token'));
+
+            setUser(response.data.user);
+            return true;
+        } catch (error) {
+            console.error('Login failed:', error);
+            return false;
+        }
     };
+
 
     const logout = () => {
         setUser(null);
-        localStorage.removeItem('feedbackUser');
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
     };
 
     return (
@@ -33,18 +56,3 @@ export function AuthProvider({ children }) {
 }
 
 export const useAuth = () => useContext(AuthContext);
-
-// Mock authentication service
-const fakeAuthService = async ({ email, password }) => {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve({
-                id: '123',
-                email,
-                name: email.includes('manager') ? 'Manager User' : 'Employee User',
-                role: email.includes('manager') ? 'manager' : 'employee',
-                team: 'engineering'
-            });
-        }, 500);
-    });
-};

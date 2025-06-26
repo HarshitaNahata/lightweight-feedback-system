@@ -1,58 +1,83 @@
-import { createContext, useState, useContext, useCallback } from 'react';
+import { createContext, useState, useContext } from 'react';
+import API from '../services/api';
 
 const FeedbackContext = createContext();
 
 export function FeedbackProvider({ children }) {
     const [feedbacks, setFeedbacks] = useState([]);
     const [teamMembers, setTeamMembers] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
 
-    // Wrap loadInitialData with useCallback
-    const loadInitialData = useCallback((user) => {
-        // Mock data based on user role
-        if (user.role === 'manager') {
-            setTeamMembers([
-                { id: '1', name: 'Alex Johnson', role: 'Developer' },
-                { id: '2', name: 'Sam Smith', role: 'Designer' }
-            ]);
-
-            setFeedbacks([
-                {
-                    id: '101',
-                    employeeId: '1',
-                    strengths: 'Excellent problem-solving skills',
-                    areas: 'Could improve documentation',
-                    sentiment: 'positive',
-                    date: '2025-06-15',
-                    acknowledged: false
-                }
-            ]);
-        } else {
-            setFeedbacks([
-                {
-                    id: '101',
-                    strengths: 'Excellent problem-solving skills',
-                    areas: 'Could improve documentation',
-                    sentiment: 'positive',
-                    date: '2025-06-15',
-                    acknowledged: false
-                }
-            ]);
+    // Load feedbacks from API
+    const loadFeedbacks = async () => {
+        if (!localStorage.getItem('token')) return;
+        setLoading(true);
+        try {
+            const response = await API.get('/feedbacks');
+            setFeedbacks(response.data);
+            setError(null);
+        } catch (err) {
+            setError('Failed to load feedbacks');
+            console.error('Error loading feedbacks:', err);
+        } finally {
+            setLoading(false);
         }
-    }, []); // Empty dependency array ensures stable reference
-
-    const addFeedback = (feedback) => {
-        setFeedbacks([...feedbacks, {
-            ...feedback,
-            id: Date.now().toString(),
-            date: new Date().toISOString().split('T')[0],
-            acknowledged: false
-        }]);
     };
 
-    const updateFeedback = (id, updates) => {
-        setFeedbacks(feedbacks.map(f =>
-            f.id === id ? { ...f, ...updates } : f
-        ));
+    // Load team members (for manager)
+    const loadTeamMembers = async () => {
+        setLoading(true);
+        try {
+            // Temporary mock data until backend implements /team-members
+            if (process.env.NODE_ENV === 'development') {
+                setTeamMembers([
+                    { id: '1', name: 'Alex Johnson', role: 'Developer' },
+                    { id: '2', name: 'Sam Smith', role: 'Designer' }
+                ]);
+                return;
+            }
+
+            const response = await API.get('/team-members');
+            setTeamMembers(response.data);
+            setError(null);
+        } catch (err) {
+            setError('Failed to load team members');
+            console.error('Error loading team members:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Create new feedback
+    const createFeedback = async (feedbackData) => {
+        try {
+            const response = await API.post('/feedbacks', feedbackData);
+            setFeedbacks(prev => [...prev, response.data]); // Functional update
+            return true;
+        } catch (err) {
+            console.error('Error creating feedback:', err);
+            return false;
+        }
+    };
+
+    // Update feedback
+    const updateFeedback = async (id, updates) => {
+        try {
+            await API.patch(`/feedbacks/${id}`, updates);
+            setFeedbacks(prev =>
+                prev.map(f => f.id === id ? { ...f, ...updates } : f)
+            );
+            return true;
+        } catch (err) {
+            console.error('Error updating feedback:', err);
+            return false;
+        }
+    };
+
+    // Acknowledge feedback
+    const acknowledgeFeedback = async (id) => {
+        return updateFeedback(id, { acknowledged: true });
     };
 
     return (
@@ -60,9 +85,13 @@ export function FeedbackProvider({ children }) {
             value={{
                 feedbacks,
                 teamMembers,
-                addFeedback,
+                loading,
+                error,
+                loadFeedbacks,
+                loadTeamMembers,
+                createFeedback,
                 updateFeedback,
-                loadInitialData
+                acknowledgeFeedback
             }}
         >
             {children}
